@@ -1,8 +1,10 @@
 import { useContext } from 'react'
 import { createContext } from 'react'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { HiEllipsisVertical } from 'react-icons/hi2'
 import styled from 'styled-components'
+import useCloseOnClick from '../hooks/useCloseOnClick'
 
 const Menu = styled.div`
   display: flex;
@@ -66,30 +68,59 @@ const StyledButton = styled.button`
 `
 const MenuContext = createContext()
 function Menus({ children }) {
-  const [openId, setOpenId] = useState()
+  const [openId, setOpenId] = useState('')
+  const [position, setPosition] = useState(null)
   const close = () => setOpenId('')
   const open = setOpenId
   return (
-    <MenuContext.Provider value={{ openId, close, open }}>
+    <MenuContext.Provider
+      value={{ openId, close, open, position, setPosition }}
+    >
       {children}
     </MenuContext.Provider>
   )
 }
 
 function Toggle({ id }) {
-  const { openId, close, open } = useContext(MenuContext)
-  function handleClick() {}
+  const { openId, close, open, setPosition } = useContext(MenuContext)
+  function handleClick(e) {
+    const rect = e.target.closest('button').getBoundingClientRect()
+    setPosition({
+      x: window.innerWidth - rect.width - rect.x,
+      y: rect.y + rect.height + 8,
+    })
+    openId === '' || openId !== id ? open(id) : close()
+  }
   return (
     <StyledToggle onClick={handleClick}>
       <HiEllipsisVertical></HiEllipsisVertical>
     </StyledToggle>
   )
 }
-function List({ id }) {}
-function Button({ children }) {
+function List({ id, children }) {
+  const { openId, position, close } = useContext(MenuContext)
+  const ref = useCloseOnClick(close)
+
+  if (openId !== id) return null
+  return createPortal(
+    <StyledList position={position} ref={ref}>
+      {children}
+    </StyledList>,
+    document.body,
+  )
+}
+function Button({ children, icon, onClick }) {
+  const { close } = useContext(MenuContext)
+  function handleClick() {
+    onClick?.()
+    close()
+  }
   return (
     <li>
-      <StyledButton>{children}</StyledButton>
+      <StyledButton onClick={handleClick}>
+        {icon}
+        <span>{children}</span>
+      </StyledButton>
     </li>
   )
 }

@@ -6,7 +6,6 @@ export default function useCloseOnClick(handler, listenCapturing = true) {
     function () {
       function handleClick(e) {
         if (ref.current && !ref.current.contains(e.target)) {
-          console.log('here')
           handler()
         }
       }
